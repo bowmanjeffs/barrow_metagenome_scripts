@@ -1,5 +1,8 @@
 barrow_metagenome_scripts
 =========================
+The python and R scripts included here are used as indicated in the below workflow.  The workflow does not describe a complete pipeline, some modification will be required to work on your system.
+
+
 For a second round assembly and annotation I'm prepping my sequence files with SEAtAR.  SEAStAR has some advantages over solexaQA + khmer, including the ability to remove technical replicates from the dataset.  This is pretty slow for large datasets, and works best if you have a large insert size.  For my dataset it removes ~ %70 of reads, which is probably excessive, but does make downstream analysis a lot faster and presumably makes quantitative representations of different proteins in the dataset more defendable.  Much of this analysis follows the guidance of the lambda phage vignette available in the SEAStAR package (Google "Armbrust lab seastar").
 
 NOTE: I have not clarified input and output file names as I did for method 1.  I'll try to do this at some point...
