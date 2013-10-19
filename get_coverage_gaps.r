@@ -2,7 +2,7 @@ setwd('~/deming_lab/Barrow 10.2/barrow_metagenome')
 
 mapped <- read.table('mapped_genomes_regions.txt')
 
-l <- 'NC_016812'
+l <- 'NC_007205'
 
 mapped_ratio <- c()
 
@@ -20,17 +20,25 @@ for(l in levels(mapped$V1)){
       height = 4
       )
   
-  plot(temp_hist$counts ~ temp_hist$mids,
-       ylim = c(1, max(temp_hist$counts)),
-       log = 'y',
+  cov <- (temp_hist$counts * 96) / 5000
+  
+  plot(cov ~ temp_hist$mids,
+       ylim = c(1, max(cov) + 5),
+#       log = 'y',
        type = 'h',
-       xlab = 'position',
-       ylab = 'reads mapped per 5000 bp bin'
+       xlab = expression(paste('position x 10'^{6})),
+       ylab = 'coverage per 5000 bp bin',
+       xaxt = 'n',
        )
+  
+  axis(side = 1,
+       labels = seq(0,1,1),
+       at = c(0,1000000)
+  )
 
   temp_gaps <- temp_hist$mids[which(temp_hist$counts == 0)]
 
-  points(temp_gaps, c(rep(max(temp_hist$counts), length(temp_gaps))),
+  points(temp_gaps, c(rep(max(cov) + 5, length(temp_gaps))),
        pch = '|',
        cex = 0.6,
        col = 'red')
