@@ -21,6 +21,7 @@ import gzip
 import os
 
 read_size = 96 ## mean QC'd read length
+bins = 1000 # size of bin for determing coverage breadth
 
 gis = set()
 
@@ -33,8 +34,20 @@ gi_id = {} # key = ncbi, value = gi
 for filename in os.listdir('genome_alignment'):
     if filename.endswith('sam.gz'):
         name = filename.split('.')
+        full_name = name[1]+'.'+name[2]
         name = name[1]
+        with gzip.open('/volumes/deming/databases/bwa/'+full_name+'.fasta.gz', 'rb') as ref_fasta:
+            for line in ref_fasta:
+                if line.startswith('>'):
+                    if 'plasmid' in line:
+                        typ = 'plasmid'
+                    elif 'Plasmid' in line:
+                        typ = 'plasmid'
+                    else:
+                        typ = 'chromosome'
         with gzip.open('genome_alignment/'+filename, 'rb') as sam:
+            starts = []
+            ends = []
             l = 0
             for line in sam:
                 if line.startswith('@'):
@@ -45,10 +58,32 @@ for filename in os.listdir('genome_alignment'):
                     length = length[1].rstrip()
                 else:
                     l = l + 1
-            c = (read_size * l) / float(length)
-            print gi, l, c
+                    line = line.split('\t')
+                    start = int(line[3])
+                    end = int(line[3]) + len(line[9])
+                    starts.append(start)
+                    ends.append(end)
+                    
+            starts = sorted(starts)
+            ends = sorted(ends)                
+            gaps = {}
+            c = 0
+            
+            for i,e in enumerate(ends):
+                try:
+                    if starts[i + 1] - e > bins: # lowest size limit for annotating gaps
+                        c = c + 1
+                        #print e, starts[i + 1]
+                        gaps[c] = e, starts[i + 1]
+                except IndexError:
+                    continue                    
+                    
+            cov = (read_size * l) / float(length)
+            br = len(gaps.keys()) / (float(length) / bins) # fraction of 1000 bp bins with at least on read mapped
+            
+            print gi, l, cov, br
             gis.add(gi)
-            genome_dict[gi] = name, length, l, c
+            genome_dict[gi] = name, length, l, cov, br, typ
             gi_id[name] = gi
             
 ## pickle gi_id for use in downstream script 
@@ -149,11 +184,11 @@ with open('genome_alignment_gi_taxid.txt', 'r') as gi_taxid:
 ## pickle the dictionary for use by downstream scripts
 cPickle.dump(tax_dict, open('bacterial_genomes_taxonomy.p', 'wb'))
 
-## get read data for each taxonomy, searching both dictionaries by gi number
+## get read data for each taxonomy (strain), searching both dictionaries by gi number
 with open('mapped_reads_length.txt', 'w') as output:       
     for key in tax_dict.keys():
         if key in genome_dict.keys():
-            print >> output, tax_dict[key][3], '\t', tax_dict[key][6], '\t', genome_dict[key][0], '\t', genome_dict[key][1], '\t', genome_dict[key][2], '\t', genome_dict[key][3]
+            print >> output, tax_dict[key][3], '\t', tax_dict[key][6], '\t', genome_dict[key][0], '\t', genome_dict[key][1], '\t', genome_dict[key][2], '\t', genome_dict[key][3], '\t', genome_dict[key][4], '\t', genome_dict[key][5]
 
 ## create dictionary with reads as keys and mapped species as values
 

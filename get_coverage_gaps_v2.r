@@ -2,7 +2,7 @@ setwd('~/deming_lab/Barrow 10.2/barrow_metagenome')
 
 mapped <- read.table('mapped_genomes_regions.txt')
 
-l <- 'NC_007205'
+l <- 'NC_016812'
 
 mapped_ratio <- c()
 
@@ -32,15 +32,15 @@ for(l in levels(mapped$V1)){
        )
   
   axis(side = 1,
-       labels = seq(0,1,1),
-       at = c(0,1000000)
+       labels = seq(0,5,1),
+       at = c(0,1000000, 2000000, 3000000, 4000000, 5000000)
   )
 
   temp_gaps <- temp_hist$mids[which(temp_hist$counts == 0)]
 
   points(temp_gaps, c(rep(max(cov) + 5, length(temp_gaps))),
        pch = '|',
-       cex = 0.6,
+       cex = 0.7,
        col = 'red')
   title(main = l)
   title(sub = paste('gap ratio = ', round(r,2)))
