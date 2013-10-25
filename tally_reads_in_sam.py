@@ -23,7 +23,7 @@ reads_set = set()
 ## parse sam.gz files, creating a new dictionary key for new reads or adding
 ## the genome name as a value to existing keys.
 n = 0
-for filename in os.listdir('.'):
+for filename in os.listdir('genome_alignment'):
     if filename[-6:] == 'sam.gz':
         n = n + 1
         name = filename.split('.')
@@ -41,7 +41,7 @@ for filename in os.listdir('.'):
                         reads_dict[read].append(name)
 
 ## print the key and number of values for each read in dictionary
-output = open('44_reads_mapped_genomes.txt', 'w')
+output = open('42_reads_mapped_genomes.txt', 'w')
 for read in reads_dict.keys():
     print read, len(reads_dict[read])
     print >> output, read, '\t', len(reads_dict[read])   
@@ -49,4 +49,4 @@ output.close()
 
 ## this script likely took a long time to run.  save the dictionary as a pickle
 ## for downstream analysis so that you don't have to run again!
-cPickle.dump(reads_dict, open('44_reads_genomes_mapping.p', 'wb'))
+cPickle.dump(reads_dict, open('42_reads_genomes_mapping.p', 'wb'))

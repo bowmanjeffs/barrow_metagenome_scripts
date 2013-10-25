@@ -19,8 +19,8 @@ V6 combines get_coverage_gaps_v2.py with this script.
 """
 read_size = 96 ## mean QC'd read length
 bins = 1000 ## size of bin for determing coverage breadth
-cutoff = 0.5 ## coverage below this value will not be reported in mapped_genomes_regions.txt.gz
-min_gap = 10000
+cutoff = 0.03 ## coverage below this value will not be reported in mapped_genomes_regions.txt.gz
+min_gap = 5000
 
 from Bio import SeqIO
 import subprocess
@@ -113,6 +113,7 @@ for filename in os.listdir('genome_alignment'):
         with gzip.open('genome_alignment/'+filename, 'rb') as sam:
             cov_reg = {} ## coverage regions within reference as start, end
             l = 0
+            size = []
             
             for line in sam:
                 if line.startswith('@'):
@@ -127,6 +128,7 @@ for filename in os.listdir('genome_alignment'):
                     start = int(line[3])
                     end = int(line[3]) + len(line[9])
                     cov_reg[l] = start, end
+                    size.append(int(end) - int(start))
                                 
             gaps = {}            
             cov_set = set() ## unique positions in genome with a read mapped
@@ -152,20 +154,22 @@ for filename in os.listdir('genome_alignment'):
                 except IndexError:
                     continue                    
                     
-            cov = (read_size * l) / float(length) ## coverage by traditional calculation
+            #cov = (read_size * l) / float(length) ## coverage using mean read length
             br = len(cov_set) / float(length) ## fraction of positions with a read mapped
+            cov = sum(size) / float(length) ## coverage using actual read length
             
             print gi, length, len(cov_set), l, cov, br, typ
             gis.add(gi)
-            genome_dict[gi] = name, length, l, cov, br, typ, len(cov_set)
+            genome_dict[gi] = name, length, l, cov, br, typ
             gi_id[name] = gi
+            
+            if len(cov_dict.keys()) > 0:            
+                for each in cov_dict.keys():
+                    print >> regions_output, name+'\t'+str(each)+'\t'+str(cov_dict[each])
             
             ## if coverage is above the cutoff, go ahead and print all the mapped locations to file
             
-            if cov >= cutoff:
-                for each in cov_dict.keys():
-                    print >> regions_output, name+'\t'+str(each)+'\t'+str(cov_dict[each])+'\t'+str(length)
-                
+            if br >= cutoff:                
                 with open(name+'_coverage_gaps.fasta', 'w') as fasta_out:
                     fasta_in = SeqIO.read(gzip.open('/Volumes/deming/databases/bwa/'+full_name+'.fasta.gz', 'rb'), 'fasta')
                     for gap in gaps.keys():
@@ -263,7 +267,8 @@ if have_bad_gi == False:
     bad_gi = set()
     with open('genome_alignment_gi_taxid.txt', 'r') as id_complete:
         for complete in id_complete:
-            gi_complete.add(complete.split('\t')[0])
+            complete = complete.split('\t')
+            gi_complete.add(complete[0])
     for gi in gis:
         if gi not in gi_complete:
             bad_gi.add(gi)
@@ -301,7 +306,7 @@ def get_lineage(node, my_ranks):
 
 print 'mapping gi to taxonomy'
 
-tax_dict = {} # key = gi, # value = taxonomy
+tax_dict = {} # key = gi, # value = taxonomy, taxid
 
 ## map gi to taxonomy  
 with open('genome_alignment_gi_taxid.txt', 'r') as gi_taxid:
@@ -310,18 +315,18 @@ with open('genome_alignment_gi_taxid.txt', 'r') as gi_taxid:
         taxid = int(each[1].rstrip())
         node = tree.ById[taxid]
         tax = get_lineage(node, ranks)
-        tax_dict[each[0]] = tax
+        tax_dict[each[0]] = tax, taxid
 
 ## pickle the dictionary for use by downstream scripts
 cPickle.dump(tax_dict, open('bacterial_genomes_taxonomy.p', 'wb'))
 
 ## get read data for each taxonomy (strain), searching both dictionaries by gi number
 with open('mapped_reads_length.txt', 'w') as output:
-    print >> output, 'order'+'\t'+'strain'+'\t'+'id'+'\t'+'length'+'\t'+'mapped'+'\t'+'cov'+'\t'+'breadth'+'\t'+'type'+'\t'+'pos_mapped'       
+    print >> output, 'taxid'+'\t'+'order'+'\t'+'strain'+'\t'+'id'+'\t'+'length'+'\t'+'mapped'+'\t'+'cov'+'\t'+'breadth'+'\t'+'type'       
     for key in tax_dict.keys():
         if key in genome_dict.keys():
-            clean_tax = re.sub('\'', '', str(tax_dict[key][6]))
-            print >> output, str(tax_dict[key][3])+'\t'+clean_tax+'\t'+str(genome_dict[key][0])+'\t'+str(genome_dict[key][1])+'\t'+str(genome_dict[key][2])+'\t'+str(genome_dict[key][3])+'\t'+str(genome_dict[key][4])+'\t'+str(genome_dict[key][5])+'\t'+str(genome_dict[key][6])
+            clean_tax = re.sub('\'', '', str(tax_dict[key][0][6]))
+            print >> output, str(tax_dict[key][1])+'\t'+str(tax_dict[key][0][3])+'\t'+clean_tax+'\t'+str(genome_dict[key][0])+'\t'+str(genome_dict[key][1])+'\t'+str(genome_dict[key][2])+'\t'+str(genome_dict[key][3])+'\t'+str(genome_dict[key][4])+'\t'+str(genome_dict[key][5])
 
 ## create dictionary with reads as keys and mapped species as values
 
@@ -334,26 +339,26 @@ for gi in tax_dict.keys():
     if gi in genome_dict.keys():
         try:
             name = genome_dict[gi][0]
-            sp = tax_dict[gi][6]
+            sp = tax_dict[gi][0][6]
             temp = species_dict[sp]
             temp.append(name)
             species_dict[sp] = temp
         except KeyError:
             name = genome_dict[gi][0]
-            sp = tax_dict[gi][6]
+            sp = tax_dict[gi][0][6]
             species_dict[sp] = [name]
         try: 
             length = genome_dict[gi][1]
-            sp = tax_dict[gi][6]
+            sp = tax_dict[gi][0][6]
             temp = length_dict[sp]
             temp.append(length)
             length_dict[sp] = temp 
         except KeyError:
             length = genome_dict[gi][1]
-            sp = tax_dict[gi][6]
+            sp = tax_dict[gi][0][6]
             length_dict[sp] = [length]
         
-read_dict = cPickle.load(open('genome_alignment/44_reads_genomes_mapping.p', 'rb'))
+read_dict = cPickle.load(open('42_reads_genomes_mapping.p', 'rb'))
 
 species_unique = {} # key = species, value = number of unique reads
 
@@ -376,7 +381,7 @@ for read in read_dict.keys():
             species_unique[s] = 1
         print i,s, species_unique[s]
         
-with open('44_num_reads_mapped_2_unique_species.txt', 'w') as output_2, open('44_cov_reads_mapped_2_unique_species.txt', 'w') as output_3:
+with open('42_num_reads_mapped_2_unique_species.txt', 'w') as output_2, open('42_cov_reads_mapped_2_unique_species.txt', 'w') as output_3:
     for s in species_unique.keys():
         cov = (int(species_unique[s]) * 96) / (sum(map(float, length_dict[s])))
         print >> output_2, s+'\t'+str(species_unique[s])
