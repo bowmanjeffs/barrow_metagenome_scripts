@@ -12,7 +12,7 @@ refs_top_cov <- refs[order(refs$cov, decreasing = T)[1:t],]
 ##### coverage plots #####
 
 ## for testing
-l <- 'NC_003047'
+l <- 'NC_011986'
 
 ## generate coverage plots for all genomes above the coverage cutoff,
 ## as output from read_length_recruit_from_sam.py
@@ -57,6 +57,8 @@ for(l in refs_top_cov$id){
        temp_map$V3,
        ylim = c(1, max(temp_map$V3) + (max(temp_map$V3) * 0.07)),
        type = 'h',
+       #log = 'y',
+       #ylog = TRUE,
        xlab = expression(paste('position x 10'^{3})),
        ylab = 'reads mapped',
        xaxt = 'n',
@@ -187,6 +189,9 @@ legend('topright',
 t.test(refs$cov[which(refs$order == "Rhizobiales" & refs$type == 'chromosome')],
        refs$cov[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')])
 
+t.test(refs$breadth[which(refs$order == "Rhizobiales" & refs$type == 'chromosome')],
+       refs$breadth[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')])
+
 ## just rhizobiales plasmids
 
 plot(refs$mapped[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')] ~ refs$length[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')],
@@ -209,9 +214,166 @@ points(refs$mapped[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')] 
        cex = 0.8,
        col = 'black')
 
-## 
+##### look at plasmids corresponding to best covered chromosomes
 
-plot(refs$cov ~ refs$breadth,
-     xlim = c(0,0.1),
-     ylim = c(0,5))
-       
+t <- ceiling(0.01 * length(refs$cov))
+
+refs_0.01_top_cov <- refs[order(refs$cov, decreasing = T)[1:t],]
+
+ids <- refs_0.01_top_cov$taxid[which(refs_0.01_top_cov$type == 'chromosome' & refs_0.01_top_cov$order == 'Rhizobiales')]
+
+select <- refs[which(refs$taxid %in% ids),]
+
+select <- select[-grep('Brucella|Bartonella|Candidatus|Liberibacter', select$strain),]
+
+select <- select[order(select$strain, select$type),]
+
+opar <- par()
+
+par(mar = c(10, 7, 2, 2) + 0.1)
+
+color <- NULL
+
+for(c in select$type){
+  if(c == 'chromosome'){
+    color <- append(color, 'red')
+  }else(color <- append(color, 'blue'))
+}
+
+labels <- select$strain[-which(duplicated(select$strain))]
+
+text_x <- c(2,5.5,10.5,17) * 1.2
+
+barplot(select$cov,
+        col = color,
+        ylab = 'Coverage',
+        ylim = c(0,max(select$cov) * 1.1))
+
+box()
+
+legend('topleft',
+       legend = c('chromosome', 'plasmid'),
+       fill = c('red', 'blue'))
+
+text(x = text_x,
+     y = -0.3,
+     labels = labels,
+     xpd = TRUE,
+     srt = 45,
+     adj = 1,
+     cex = 1
+     )
+
+par(opar)
+
+##### barplot of top chromosomes #####
+
+barplot(refs_top_cov$cov[which(refs_top_cov$type == 'chromosome')][1:10],
+        ylab = 'Coverage',
+        xaxt = 'none',
+        cex.axis = 0.9)
+
+labels <- refs_top_cov$strain[which(refs_top_cov$type == 'chromosome')][1:10]
+
+text(species_bp[,1],
+     y = -max(refs_top_cov$cov) * 0.1,
+     labels = labels,
+     xpd=TRUE,
+     srt=45,
+     adj = 1,
+     cex = 0.9
+)
+
+##### boxplot of chromosome vs plasmids #####
+
+opar <- par()
+
+par(mar = c(5, 2, 4, 6) + 0.1)
+
+boxplot(rhizobiales$breadth ~ rhizobiales$type,
+        notch = T,
+        yaxt = 'n')
+
+axis(side = 4)
+
+mtext('Breadth',
+      side = 4,
+      line = 2.5)
+
+boxplot(rhizobiales$cov ~ rhizobiales$type,
+        notch = T,
+        yaxt = 'n')
+
+axis(side = 4)
+
+mtext('Coverage',
+      side = 4,
+      line = 2.5)
+
+par(opar)
+
+##### look at plasmids and chromosomes for strains with plasmids not fitting pattern ######
+
+rhizobiales <- rhizobiales[order(rhizobiales$cov, decreasing = T),]
+
+top_plasmids <- rhizobiales[which(rhizobiales$type == 'plasmid')[1:4],]
+
+top_plasmids_w_chrom <- rhizobiales[which(rhizobiales$taxid %in% top_plasmids$taxid),]
+
+top_plasmids_w_chrom <- top_plasmids_w_chrom[order(top_plasmids_w_chrom$taxid, top_plasmids_w_chrom$type),]
+
+opar <- par()
+
+par(mar = c(10, 7, 2, 2) + 0.1)
+
+color <- NULL
+
+for(c in top_plasmids_w_chrom$type){
+  if(c == 'chromosome'){
+    color <- append(color, 'red')
+  }else(color <- append(color, 'blue'))
+}
+
+labels <- top_plasmids_w_chrom$strain[-which(duplicated(top_plasmids_w_chrom$strain))]
+
+text_x <- c(3.5,11.5,19,27.5) * 1.2
+
+barplot(top_plasmids_w_chrom$cov,
+        col = color,
+        ylab = 'Coverage',
+        ylim = c(0,max(top_plasmids_w_chrom$cov) * 1.1))
+
+box()
+
+legend('topright',
+       legend = c('chromosome', 'plasmid'),
+       fill = c('red', 'blue'))
+
+text(x = text_x,
+     y = -0.3,
+     labels = labels,
+     xpd = TRUE,
+     srt = 45,
+     adj = 1,
+     cex = 1
+)
+
+par(opar)
+
+##### get best covered Rhizobiales strains, all elements ##
+
+pos_mapped <- cbind(rhizobiales$taxid, rhizobiales$length, rhizobiales$length * rhizobiales$breadth)
+
+summed_pos <- data.frame(tapply(pos_mapped[,3], pos_mapped[,1], sum))
+
+summed_length <- data.frame(tapply(pos_mapped[,2], pos_mapped[,1], sum))
+
+summed <- cbind(summed_length$row.names, summed_pos[,1] / summed_length[,1])
+
+summed <- as.matrix(summed[order(summed[,1], decreasing = T),])
+
+top_five <- rhizobiales[which(rhizobiales$taxid %in% row.names(summed)[1:5]),]
+
+top_five <- top_five[order(top_five$taxid, top_five$type),]
+
+write.table(top_five$id, "ncbi_id_top_five_rhizobiales.txt", quote = F, col.names = F, row.names = F)
