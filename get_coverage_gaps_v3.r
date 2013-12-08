@@ -113,6 +113,49 @@ for(l in refs_top_cov$id){
 
 ##### compare coverage bewteen genetic elements #####
 
+## coverage v breadth
+
+col = colorRampPalette(c('blue','red'))(2)
+
+rhizobiales <- refs[which(refs$order == "Rhizobiales"),]
+
+plot(refs$cov ~ refs$breadth,
+     type = 'n',
+     xlab = expression(paste('breadth')),
+     ylab = expression(paste('coverage'))
+)
+
+points(refs$cov[which(refs$order != "Rhizobiales" & refs$strain != "Candidatus Pelagibacter ubique")] ~ refs$breadth[which(refs$order != "Rhizobiales" & refs$strain != "Candidatus Pelagibacter ubique")],
+       pch = 1,
+       cex = 0.6,
+       col = col[refs$type])
+
+points(refs$cov[which(refs$order == "Rhizobiales")] ~ refs$breadth[which(refs$order == "Rhizobiales")],
+       pch = 19,
+       cex = 0.6,
+       col = col[refs$type])
+
+points(refs$cov[which(refs$strain == "Candidatus Pelagibacter ubique")] ~ refs$breadth[which(refs$strain == "Candidatus Pelagibacter ubique")],
+       pch = 3,
+       cex = 0.6,
+       col = col[refs$type])
+
+legend('topright',
+       legend = c('non-Rhizobiales', 'Rhizobiales', 'Pelagibacter ubique'),
+       col = c('grey', 'black', 'black'),
+       pch = c(19,19,3),
+       cex = 0.8)
+
+## coverage v length
+
+opar <- par()
+
+pdf(file = 'fig_1A.pdf',
+    width = 7,
+    height = 5)
+
+par(mar = c(5, 6, 4, 1) + 0.1)
+
 rhizobiales <- refs[which(refs$order == "Rhizobiales"),]
 
 plot(refs$mapped ~ refs$length,
@@ -120,7 +163,8 @@ plot(refs$mapped ~ refs$length,
      xlab = expression(paste('length x 10'^{6})),
      ylab = expression(paste('reads mapped x 10'^{3})),
      xaxt = 'n',
-     yaxt = 'n')
+     yaxt = 'n',
+     cex.axis = 1.2)
 
 axis(side = 1,
      labels = seq(0,14,2),
@@ -133,32 +177,41 @@ axis(side = 2,
 points(refs$mapped[which(refs$order != "Rhizobiales" & refs$strain != "Candidatus Pelagibacter ubique")] ~ refs$length[which(refs$order != "Rhizobiales" & refs$strain != "Candidatus Pelagibacter ubique")],
        pch = 19,
        cex = 0.6,
-       col = 'grey')
+       col = 'blue')
 
 points(refs$mapped[which(refs$order == "Rhizobiales")] ~ refs$length[which(refs$order == "Rhizobiales")],
        pch = 19,
        cex = 0.6,
-       col = 'black')
+       col = 'red')
 
 points(refs$mapped[which(refs$strain == "Candidatus Pelagibacter ubique")] ~ refs$length[which(refs$strain == "Candidatus Pelagibacter ubique")],
        pch = 3,
        cex = 0.6,
-       col = 'black')
+       col = 'blue')
 
 legend('topright',
        legend = c('non-Rhizobiales', 'Rhizobiales', 'Pelagibacter ubique'),
-       col = c('grey', 'black', 'black'),
+       col = c('blue', 'red', 'blue'),
        pch = c(19,19,3),
-       cex = 0.8)
+       cex = 1)
+
+dev.off()
 
 ## just Rhizobiales, plasmids vs chromosomes
+
+pdf(file = 'fig_1B.pdf',
+    width = 7,
+    height = 5)
+
+par(mar = c(5, 6, 4, 1) + 0.1)
 
 plot(refs$mapped ~ refs$length,
      type = 'n',
      xlab = expression(paste('length x 10'^{6})),
      ylab = expression(paste('reads mapped x 10'^{3})),
      xaxt = 'n',
-     yaxt = 'n')
+     yaxt = 'n',
+     cex.axis = 1)
 
 axis(side = 1,
      labels = seq(0,14,2),
@@ -171,18 +224,20 @@ axis(side = 2,
 points(refs$mapped[which(refs$order == "Rhizobiales" & refs$type == 'chromosome')] ~ refs$length[which(refs$order == "Rhizobiales" & refs$type == 'chromosome')],
        pch = 19,
        cex = 0.8,
-       col = 'black')
+       col = 'red')
 
 points(refs$mapped[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')] ~ refs$length[which(refs$order == "Rhizobiales" & refs$type == 'plasmid')],
-       pch = 1,
+       pch = 19,
        cex = 0.8,
-       col = 'black')
+       col = 'blue')
 
 legend('topright',
        legend = c('chromosome', 'plasmid'),
-       col = c('black', 'black'),
-       pch = c(19,1),
-       cex = 0.8)
+       col = c('red', 'blue'),
+       pch = c(19,19),
+       cex = 1)
+
+dev.off()
 
 ## t-test between these two groups ##
 
@@ -268,7 +323,7 @@ par(opar)
 
 ##### barplot of top chromosomes #####
 
-barplot(refs_top_cov$cov[which(refs_top_cov$type == 'chromosome')][1:10],
+species_bp <- barplot(refs_top_cov$cov[which(refs_top_cov$type == 'chromosome')][1:10],
         ylab = 'Coverage',
         xaxt = 'none',
         cex.axis = 0.9)
@@ -286,9 +341,11 @@ text(species_bp[,1],
 
 ##### boxplot of chromosome vs plasmids #####
 
-opar <- par()
+pdf(file = 'fig_1C.pdf',
+    width = 6,
+    height = 5)
 
-par(mar = c(5, 2, 4, 6) + 0.1)
+par(mar = c(5, 2, 4, 5) + 0.1)
 
 boxplot(rhizobiales$breadth ~ rhizobiales$type,
         notch = T,
@@ -300,6 +357,14 @@ mtext('Breadth',
       side = 4,
       line = 2.5)
 
+dev.off()
+
+pdf(file = 'fig_1D.pdf',
+    width = 6,
+    height = 5)
+
+par(mar = c(5, 2, 4, 5) + 0.1)
+
 boxplot(rhizobiales$cov ~ rhizobiales$type,
         notch = T,
         yaxt = 'n')
@@ -309,6 +374,8 @@ axis(side = 4)
 mtext('Coverage',
       side = 4,
       line = 2.5)
+
+dev.off()
 
 par(opar)
 
@@ -322,7 +389,9 @@ top_plasmids_w_chrom <- rhizobiales[which(rhizobiales$taxid %in% top_plasmids$ta
 
 top_plasmids_w_chrom <- top_plasmids_w_chrom[order(top_plasmids_w_chrom$taxid, top_plasmids_w_chrom$type),]
 
-opar <- par()
+pdf(file = 'fig_2.pdf',
+    width = 8,
+    height = 6)
 
 par(mar = c(10, 7, 2, 2) + 0.1)
 
@@ -358,7 +427,7 @@ text(x = text_x,
      cex = 1
 )
 
-par(opar)
+dev.off()
 
 ##### get best covered Rhizobiales strains, all elements ##
 
