@@ -1,5 +1,7 @@
 barrow_metagenome_scripts
 =========================
+These scripts and workflow describe our analysis from Bowman et. al, 2014, FEMS Microbial Ecology 89:2 376-387.  Please cite this publication if you use any portion of this code in your own work.
+
 The python and R scripts included here are used as indicated in the below workflow.  The workflow does not describe a complete pipeline, some modification will be required to work on your system.
 
 
